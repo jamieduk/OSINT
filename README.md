@@ -3,6 +3,7 @@
 ## Installation
 
 ```bash
+mkdir /home/$USER/Documents/Scripts/OSINT
 cd /home/$USER/Documents/Scripts/OSINT
 sudo apt -y install nodejs npm
 npm install
