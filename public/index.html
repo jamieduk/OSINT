@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OSINT Quick Launcher</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<center>
+<div class="container">
+<h1>OSINT Quick Launcher</h1>
+
+<div class="card">
+<label>Enter username / phone / email / name</label>
+<input id="qinput" placeholder="username or phone or email or full name">
+<div class="row">
+<button id="searchBtn">Build searches</button>
+<button id="socialBtn">SocialSearch (API)</button>
+</div>
+</div>
+
+<div class="card">
+<label>Ngrok URL (for image search links)</label>
+<input id="ngrokUrl" placeholder="https://your-ngrok-url.ngrok-free.app">
+</div>
+
+<div class="card">
+<label>Upload image (or paste image)</label>
+<input type="file" id="imgfile" accept="image/*">
+<div class="row">
+<button id="imgSearchBtn">Prepare image searches</button>
+</div>
+<div id="preview"></div>
+</div>
+
+<div class="card collapsible">
+<button class="collapsible-btn">More Options ▼</button>
+<div class="collapsible-content">
+<ul>
+<li>Add SocialSearcher API integration with configurable key and result parsing.</li>
+<li>Add Epieos / other paid provider integration if you have API credentials.</li>
+<li>Add automatic username checks against a list of sites with rate limiting.</li>
+<li>Make the UI a React single-file component and deployable as a container.</li>
+</ul>
+</div>
+</div>
+
+<div class="card" id="results"></div>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>
+

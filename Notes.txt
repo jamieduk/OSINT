@@ -1,0 +1,344 @@
+# OSINT Web Tool — Starter (Node.js + Express + static UI)
+
+
+cd /home/$USER/Documents/Scripts/OSINT
+
+sudo apt -y install nodejs npm
+
+npm install
+
+nodemon server.js
+
+http://localhost:8910
+
+
+# Then in another terminal tab
+
+
+curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
+  | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null \
+  && echo "deb https://ngrok-agent.s3.amazonaws.com bookworm main" \
+  | sudo tee /etc/apt/sources.list.d/ngrok.list \
+  && sudo apt update \
+  && sudo apt install ngrok
+  
+  
+# Run with your account authtoken
+
+ngrok authtoken YOUR_NGROK_AUTHTOKEN
+ngrok config add-authtoken <YOUR_V2_AUTHTOKEN>
+
+ngrok config upgrade
+
+# Expose your server
+ngrok http 8910
+
+
+
+another install method for ngrock
+
+  
+Authenticate line
+
+ngrok authtoken 325nQo3hRfdg94QZljL8pvbXRwU_63J5PiCjDD9KF2hh1uaKN
+
+
+  
+
+
+**Files included below (copy into project root):**
+
+* `package.json`
+* `server.js`
+* `public/index.html`
+* `public/app.js`
+* `public/styles.css`
+
+> ⚠️ Legal & ethics: only use this tool for lawful, ethical OSINT/research. Do not use it for stalking, harassment, or other malicious acts. I will not help automate illegal intrusions or break site terms of service. Use responsibly.
+
+---
+
+## Overview
+
+This is a lightweight starter web application that helps an analyst gather open-source intelligence by providing a single UI where you can:
+
+* Upload an image (for manual reverse-image searches)
+* Enter a username, phone number, email or full name
+* Launch curated site queries (the sites you asked for) in new tabs or call APIs when you provide keys
+
+The app intentionally **does not scrape or bypass** protections on third-party sites. Instead it:
+
+* Opens relevant search pages (constructed URLs) for manual review
+* Optionally proxies API calls when you supply API keys (for SocialSearcher or paid reverse-lookup APIs)
+
+This keeps the starter app simple and avoids automated scraping against terms of service.
+
+---
+
+## How it works (high level)
+
+1. User enters a value (username/phone/email/name) or uploads an image.
+2. App builds a list of useful queries and presents buttons to open each target search in a new tab.
+3. For image uploads the app encodes the image and gives quick links to perform manual reverse-image checks (e.g., Google Images "search by image" link or Bing Visual Search URL where available).
+4. If you provide API keys in `server.js` configuration, the server can call APIs (SocialSearcher, paid phone/email lookup APIs) and return JSON results to display.
+
+---
+
+## Notes on the sites you mentioned
+
+* `checkusernames.com` — simple username search page; the starter builds direct links to check known platforms.
+* `epieos.com` — SaaS/paid; they offer features for reverse email/phone and profile discovery. The starter offers a link and a place to add API key if you have a subscription.
+* `thatsthem.com` — public reverse-phone / people search site; the starter generates search URLs you can open.
+* `social-searcher.com` — provides an API (requires API key). Starter has a place to set the API key and a small server route to proxy queries if you add the key.
+* `osintframework.com` — is a collection of links; the starter includes quick links to relevant OSINT Framework categories.
+
+---
+
+## Server configuration
+
+* The server listens on port `8900` (per your preference). Edit `PORT` in `server.js` if needed.
+* If you add API keys, place them in the `config` object inside `server.js` (or better: set real environment variables in production).
+
+---
+
+### package.json
+
+```json
+{
+  "name":"osint-web-tool",
+  "version":"0.1.0",
+  "main":"server.js",
+  "scripts":{
+    "start":"node server.js"
+  },
+  "dependencies":{
+    "express":"^4.18.2",
+    "multer":"^1.4.5",
+    "body-parser":"^1.20.2",
+    "axios":"^1.4.0"
+  }
+}
+```
+
+### server.js
+
+```javascript
+// server.js
+// Author: starter by ChatGPT
+// Purpose: lightweight express server to serve UI and optionally proxy API requests
+
+const express=require('express');
+constpath=require('path');
+constmulter=require('multer');
+constbodyParser=require('body-parser');
+constaxios=require('axios');
+
+constapp=express();
+constupload=multer({storage:multer.memoryStorage()});
+
+// Config - replace with env vars in production
+constconfig={
+  PORT:8900,
+  SOCIALSEARCHER_API_KEY:'', // put your SocialSearcher API key here or set env var
+  EPIEOS_API_KEY:'' // if you have one (paid)
+};
+
+app.use(express.static(path.join(__dirname,'public')));
+app.use(bodyParser.json({limit:'5mb'}));
+
+// Simple proxy endpoint for SocialSearcher's API (requires API key)
+app.get('/api/socialsearch',async(req,res)=>{
+  try{
+    constq=req.query.q||'';
+    if(!config.SOCIALSEARCHER_API_KEY&& !process.env.SOCIALSEARCHER_API_KEY) return res.status(400).json({error:'no_api_key'});
+    constkey=config.SOCIALSEARCHER_API_KEY||process.env.SOCIALSEARCHER_API_KEY;
+    consturl=`https://api.social-searcher.com/v2/search?q=${encodeURIComponent(q)}&key=${key}`;
+    constr=await axios.get(url);
+    res.json(r.data);
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+// Example: proxy for a paid reverse phone/email API (if you add credentials)
+app.get('/api/reverse',async(req,res)=>{
+  try{
+    consttype=req.query.type||'phone';
+    constvalue=req.query.value||'';
+    // PLACEHOLDER: integrate your paid provider here. Example provider may need API key and different endpoints.
+    return res.status(400).json({error:'not_configured','hint':'add provider integration in server.js'});
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+// Accept image uploads (client sends base64 too) - returns a data URL for client preview and quick links
+app.post('/upload-image',upload.single('photo'),(req,res)=>{
+  try{
+    letdata=null;
+    if(req.file){
+      constb=req.file.buffer;
+      constmimetype=req.file.mimetype;
+      data=`data:${mimetype};base64,${b.toString('base64')}`;
+    }else if(req.body.dataUrl){
+      data=req.body.dataUrl;
+    }
+    if(!data) return res.status(400).json({error:'no_image'});
+    res.json({dataUrl:data});
+  }catch(err){
+    res.status(500).json({error:err.message});
+  }
+});
+
+app.listen(config.PORT,()=>console.log('Server running on port '+config.PORT));
+```
+
+### public/index.html
+
+```html
+<!-- index.html -->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OSINT Quick Launcher</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="container">
+  <h1>OSINT Quick Launcher</h1>
+  <div class="card">
+    <label>Enter username / phone / email / name</label>
+    <input id="qinput" placeholder="username or phone or email or full name">
+    <div class="row">
+      <button id="searchBtn">Build searches</button>
+      <button id="socialBtn">SocialSearch (API)</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Upload image (or paste image)</label>
+    <input type="file" id="imgfile" accept="image/*">
+    <div class="row">
+      <button id="imgSearchBtn">Prepare image searches</button>
+    </div>
+    <div id="preview"></div>
+  </div>
+
+  <div class="card" id="results"></div>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>
+```
+
+### public/app.js
+
+```javascript
+// app.js - client logic
+// keep UI simple: generate curated links for the given query
+
+constqinput=document.getElementById('qinput');
+constsearchBtn=document.getElementById('searchBtn');
+constsocialBtn=document.getElementById('socialBtn');
+constresults=document.getElementById('results');
+constimgfile=document.getElementById('imgfile');
+constimgSearchBtn=document.getElementById('imgSearchBtn');
+constpreview=document.getElementById('preview');
+
+functionopen(url){window.open(url,'_blank');}
+
+searchBtn.addEventListener('click',()=>{
+  constv=qinput.value.trim();
+  if(!v) return alert('enter value');
+  results.innerHTML='';
+  // quick curated searches using the sites you mentioned
+  constlinks=[];
+  // checkusernames - main page that accepts a username param
+  links.push({label:'CheckUsernames - aggregated',url:`https://checkusernames.com/?q=${encodeURIComponent(v)}`} );
+  // epieos - redirect to site with query
+  links.push({label:'Epieos (site)',url:`https://epieos.com/search?q=${encodeURIComponent(v)}`} );
+  // thatsthem reverse searches (phone/name)
+  links.push({label:'Thatsthem - people search',url:`https://thatsthem.com/search?term=${encodeURIComponent(v)}`} );
+  // Social Searcher web search
+  links.push({label:'SocialSearcher - web',url:`https://www.social-searcher.com/search?q=${encodeURIComponent(v)}`} );
+  // OSINT Framework suggestions for username
+  links.push({label:'OSINT Framework - Usernames',url:`https://osintframework.com/`} );
+
+  links.forEach(l=>{
+    constb=document.createElement('button');
+    b.textContent=l.label;
+    b.onclick=()=>open(l.url);
+    results.appendChild(b);
+  });
+});
+
+socialBtn.addEventListener('click',async()=>{
+  constv=qinput.value.trim();
+  if(!v) return alert('enter value');
+  try{
+    constr=await fetch(`/api/socialsearch?q=${encodeURIComponent(v)}`);
+    if(!r.ok) throw new Error(await r.text());
+    constj=await r.json();
+    results.innerHTML= `<pre>${JSON.stringify(j,null,2)}</pre>`;
+  }catch(err){
+    alert('SocialSearch failed: '+err.message);
+  }
+});
+
+imgSearchBtn.addEventListener('click',async()=>{
+  constf=imgfile.files[0];
+  if(!f) return alert('select image');
+  constr=new FileReader();
+  r.onload=async()=>{
+    constdataUrl=r.result;
+    preview.innerHTML=`<img src="${dataUrl}" alt="preview" style="max-width:300px">`;
+    // send to server to get back the data URL (this is mostly to show upload endpoint usage)
+    constresp=await fetch('/upload-image',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dataUrl})});
+    constj=await resp.json();
+    // prepare image reverse search links
+    constlinks=[
+      {label:'Google Images (manual)',url:`https://images.google.com/searchbyimage?image_url=${encodeURIComponent(j.dataUrl)}`},
+      {label:'Bing Visual Search',url:`https://www.bing.com/images/search?q=imgurl:${encodeURIComponent(j.dataUrl)}&view=detailv2`},
+      {label:'TinEye',url:`https://tineye.com/search?url=${encodeURIComponent(j.dataUrl)}`}
+    ];
+    constdiv=document.createElement('div');
+    links.forEach(l=>{constb=document.createElement('button');b.textContent=l.label;b.onclick=()=>open(l.url);div.appendChild(b);});
+    results.appendChild(div);
+  };
+  r.readAsDataURL(f);
+});
+```
+
+### public/styles.css
+
+```css
+/* styles.css - dark centered theme */
+body{background:#0f1720;color:#dbeafe;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;margin:0;padding:40px}
+.container{max-width:900px;margin:0auto}
+h1{text-align:center;margin-bottom:12px}
+.card{background:#0b1220;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+input{width:100%;padding:10px;border-radius:8px;border:1px solid #223}
+button{margin:6px 6px 6px 0;padding:10px 12px;border-radius:8px;border:none;background:#10b981;color:#012;cursor:pointer}
+button:active{transform:translateY(1px)}
+.row{display:flex;gap:8px}
+#results button{display:inline-block}
+img{border-radius:8px}
+```
+
+---
+
+## Next steps you can ask for (I can implement now):
+
+* Add SocialSearcher API integration with configurable key and result parsing.
+* Add Epieos / other paid provider integration if you have API credentials.
+* Add automatic username checks against a list of sites (meta-site scraping) with rate limiting.
+* Make the UI a React single-file component and deployable as a container.
+
+If you want I can also produce a ready-to-run zip with these files.
+
+---
+
+If this looks good say `Make files` and I'll create a downloadable project archive or show any changes you'd like.
+

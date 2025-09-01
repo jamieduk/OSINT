@@ -1,0 +1,19 @@
+/* styles.css - dark centered theme */
+body{background:#0f1720;color:#dbeafe;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;margin:0;padding:40px}
+.container{max-width:900px;margin:0auto}
+h1{text-align:center;margin-bottom:12px}
+.card{background:#0b1220;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+input{width:100%;padding:10px;border-radius:8px;border:1px solid #223}
+button{margin:6px 6px 6px 0;padding:10px 12px;border-radius:8px;border:none;background:#10b981;color:#012;cursor:pointer}
+button:active{transform:translateY(1px)}
+.row{display:flex;gap:8px}
+#results button{display:inline-block}
+img{border-radius:8px}
+
+/* styles.css - dark centered theme */
+
+
+.card{background:#0b1220;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+input{width:100%;padding:10px;border-radius:8px;border:1px solid #223}
+button{margin:6px 6px 6px 0;padding:10px 12px;border-radius:8px;border:none;background:#10b
+.collapsible-content{display:none}
